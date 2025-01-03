@@ -7,6 +7,7 @@ import (
 	"os"
 	"strings"
 
+	"github.com/gabrielluizsf/file-encryptor/validator"
 	"golang.org/x/term"
 )
 
@@ -68,5 +69,14 @@ func User() (UserInput, error) {
 		OutputPath: outputPath,
 		Secret:     secretStr,
 	}
-	return input, nil
+	err = validateSecret(input.Secret)
+	return input, err
+}
+
+// ErrSecretTooShort is returned when the secret key is less than 11 characters long.
+var ErrSecretTooShort = errors.New("the secret key must be at least 11 characters long")
+
+// validateKey ensures the key is at least 11 characters long.
+func validateSecret(key string) error {
+	return validator.Secret(ErrSecretTooShort).Validate([]byte(key))
 }
