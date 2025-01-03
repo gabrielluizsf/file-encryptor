@@ -6,21 +6,16 @@ import (
 	"testing"
 )
 
+type MockReadPswd struct {
+	Key string
+}
+
 // Mock for the terminal password read function
-func mockReadPassword(fd int) ([]byte, error) {
-	return []byte("secretkey"), nil // Returning a fixed password for testing
+func (m MockReadPswd) ReadPassword(fd int) ([]byte, error) {
+	return []byte(m.Key), nil // Returning a fixed password for testing
 }
 
 func TestUser(t *testing.T) {
-	r, w, _ := os.Pipe()
-
-	go func() {
-		fmt.Fprintln(w, "encrypt")
-		fmt.Fprintln(w, "file.txt")
-		fmt.Fprintln(w, "file.enc")
-		w.Close()
-	}()
-
 	originalStdin := os.Stdin
 	originalReadPswd := readPassword
 
@@ -28,13 +23,9 @@ func TestUser(t *testing.T) {
 		os.Stdin = originalStdin
 		readPassword = originalReadPswd
 	}()
-
-	os.Stdin = r
-	readPassword = mockReadPassword
-
+	executeInput("secretkey")
 	userInput, err := User()
-
-	if err != nil {
+	if err != ErrSecretTooShort {
 		t.Fatal(err)
 	}
 
@@ -52,4 +43,26 @@ func TestUser(t *testing.T) {
 	if userInput.Secret != "secretkey" {
 		t.Errorf("expected 'secretkey', got %s", userInput.Secret)
 	}
+	
+	executeInput("secretkey11")
+
+	userInput, err = User()
+	if err != nil {
+		t.Fatal(err)
+	}
+
+}
+
+func executeInput(key string) {
+	r, w, _ := os.Pipe()
+
+	go func() {
+		fmt.Fprintln(w, "encrypt")
+		fmt.Fprintln(w, "file.txt")
+		fmt.Fprintln(w, "file.enc")
+		w.Close()
+	}()
+
+	os.Stdin = r
+	readPassword = MockReadPswd{key}.ReadPassword
 }
