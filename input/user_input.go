@@ -28,7 +28,10 @@ const (
 )
 
 // ErrInvalidOperation is returned when the user enters an invalid operation.
-var ErrInvalidOperation = errors.New("invalid operation. Please choose 'encrypt' or 'decrypt'")
+var (
+	ErrInvalidOperation = errors.New("invalid operation. Please choose 'encrypt' or 'decrypt'")
+	readPassword        = term.ReadPassword
+)
 
 // User prompts the user to enter the operation, input file path, output file path, and secret key.
 func User() (UserInput, error) {
@@ -48,17 +51,17 @@ func User() (UserInput, error) {
 
 	// Secret key input with hidden characters
 	fmt.Print("Enter the secret key (at least 11 characters): ")
-	secret, err := term.ReadPassword(int(os.Stdin.Fd()))
+	secret, err := readPassword(int(os.Stdin.Fd()))
 	if err != nil {
 		return UserInput{}, err
 	}
 	secretStr := string(secret)
 	secretStr = strings.TrimSpace(secretStr)
 
-	if !strings.Contains(operation, Encrypt.String()) || !strings.Contains(operation, Decrypt.String()) {
+	if operation != Encrypt.String() && operation != Decrypt.String() {
 		return UserInput{}, ErrInvalidOperation
 	}
-
+	
 	input := UserInput{
 		Operation:  operation,
 		Path:       inputPath,
