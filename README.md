@@ -11,14 +11,14 @@ import (
 
 func main() {
 	// Get user input
-	input, err := input.User()
+	userInput, err := input.User()
 	if err != nil {
 		fmt.Println(err)
 		return
 	}
 	var (
-		operation, secret     = input.Operation, input.Secret
-		inputPath, outputPath = input.Path, input.OutputPath
+		operation, secret     = userInput.Operation, userInput.Secret
+		inputPath, outputPath = userInput.Path, userInput.OutputPath
 	)
 	// Create a new FileCrypto 'instance'
 	fileCrypto, err := encryptor.NewFileCrypto(secret)
@@ -29,13 +29,13 @@ func main() {
 
 	// Perform the operation based on user input
 	switch operation {
-	case "encrypt":
+	case input.Encrypt:
 		if err := fileCrypto.Encrypt(inputPath, outputPath); err != nil {
 			fmt.Println("Error encrypting file:", err)
 			return
 		}
 		fmt.Println("\nFile encrypted successfully")
-	case "decrypt":
+	case input.Decrypt:
 		if err := fileCrypto.Decrypt(inputPath, outputPath); err != nil {
 			fmt.Println("Error decrypting file:", err)
 			return
@@ -43,6 +43,5 @@ func main() {
 		fmt.Println("\nFile decrypted successfully")
 	}
 }
-
 
 ```
