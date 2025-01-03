@@ -8,6 +8,8 @@ import (
 	"errors"
 	"io"
 	"os"
+
+	"github.com/gabrielluizsf/file-encryptor/validator"
 )
 
 // FileCrypto defines the structure for file encryption and decryption.
@@ -106,10 +108,7 @@ var ErrKeyTooShort = errors.New("the key must be at least 11 characters long")
 
 // validateKey ensures the key is at least 11 characters long.
 func validateKey(key string) error {
-	if len(key) < 11 {
-		return ErrKeyTooShort
-	}
-	return nil
+	return validator.Key(ErrKeyTooShort).Validate([]byte(key))
 }
 
 // deriveKey generates a 32-byte key from the given secret.
