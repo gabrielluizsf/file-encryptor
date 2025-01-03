@@ -101,10 +101,13 @@ func (fc *FileCrypto) Decrypt(inputPath, outputPath string) error {
 	return nil
 }
 
+// ErrKeyTooShort is returned when the key is less than 11 characters long.
+var ErrKeyTooShort = errors.New("the key must be at least 11 characters long")
+
 // validateKey ensures the key is at least 11 characters long.
 func validateKey(key string) error {
 	if len(key) < 11 {
-		return errors.New("the key must be at least 11 characters long")
+		return ErrKeyTooShort
 	}
 	return nil
 }
