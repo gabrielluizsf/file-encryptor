@@ -13,8 +13,10 @@ import (
 
 // UserInput defines the structure for user input.
 type UserInput struct {
-	Operation, Path,
-	OutputPath, Secret string
+	Operation cryptoOperation
+	Path,
+	OutputPath,
+	Secret string
 }
 
 type cryptoOperation string
@@ -59,12 +61,13 @@ func User() (UserInput, error) {
 	secretStr := string(secret)
 	secretStr = strings.TrimSpace(secretStr)
 
-	if operation != Encrypt.String() && operation != Decrypt.String() {
-		return UserInput{}, ErrInvalidOperation
+	selectedOperation, err := validateOperation(operation)
+	if err != nil {
+		return UserInput{}, err
 	}
-	
+
 	input := UserInput{
-		Operation:  operation,
+		Operation:  selectedOperation,
 		Path:       inputPath,
 		OutputPath: outputPath,
 		Secret:     secretStr,
@@ -79,4 +82,15 @@ var ErrSecretTooShort = errors.New("the secret key must be at least 11 character
 // validateKey ensures the key is at least 11 characters long.
 func validateSecret(key string) error {
 	return validator.Secret(ErrSecretTooShort).Validate([]byte(key))
+}
+
+func validateOperation(operation string) (cryptoOperation, error) {
+	switch operation {
+	case Encrypt.String():
+		return Encrypt, nil
+	case Decrypt.String():
+		return Decrypt, nil
+	default:
+		return "", ErrInvalidOperation
+	}
 }
