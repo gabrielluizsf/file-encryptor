@@ -16,6 +16,17 @@ type UserInput struct {
 	OutputPath, Secret string
 }
 
+type cryptoOperation string
+
+func (c cryptoOperation) String() string {
+	return string(c)
+}
+
+const (
+	Encrypt cryptoOperation = "encrypt"
+	Decrypt cryptoOperation = "decrypt"
+)
+
 // ErrInvalidOperation is returned when the user enters an invalid operation.
 var ErrInvalidOperation = errors.New("invalid operation. Please choose 'encrypt' or 'decrypt'")
 
@@ -44,7 +55,7 @@ func User() (UserInput, error) {
 	secretStr := string(secret)
 	secretStr = strings.TrimSpace(secretStr)
 
-	if operation != "encrypt" && operation != "decrypt" {
+	if !strings.Contains(operation, Encrypt.String()) || !strings.Contains(operation, Decrypt.String()) {
 		return UserInput{}, ErrInvalidOperation
 	}
 
