@@ -12,7 +12,7 @@ import (
 )
 
 func TestStdReader(t *testing.T) {
-	assert.Equal(t, StdReader, bufio.NewReader(os.Stdin))
+	assert.Equal(t, StdReader()(), bufio.NewReader(os.Stdin))
 }
 
 func TestReadPassword(t *testing.T) {
@@ -65,7 +65,9 @@ func TestUser(t *testing.T) {
 			var fd int
 			r := testStringReader(testCase.operation, testCase.inputFilePath, testCase.outputFilePath)
 			input, err := User(
-				r,
+				func() InputReader {
+					return r
+				},
 				testReadPSWD(testCase.secret, &fd),
 			)
 			assert.Equal(t, err, testCase.expectedErr)

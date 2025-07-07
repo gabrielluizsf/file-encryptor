@@ -11,7 +11,7 @@ import (
 
 func main() {
 	// Get user input
-	userInput, err := input.User(input.StdReader, input.ReadPassword)
+	userInput, err := input.User(input.StdReader(), input.ReadPassword)
 	if err != nil {
 		fmt.Println(err)
 		return

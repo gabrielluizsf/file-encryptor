@@ -37,12 +37,20 @@ var (
 	// ErrInvalidOperation is returned when the user enters an invalid operation.
 	ErrInvalidOperation = errors.New("invalid operation. Please choose 'encrypt' or 'decrypt'")
 
-	// StdReader is the standard input reader.
-	StdReader = bufio.NewReader(os.Stdin)
-
 	// ReadPassword is the function for reading a password.
 	ReadPassword ReadPSWDFn = PasswordReader()
 )
+
+
+// StdReader is the standard input reader.
+func StdReader() InputReaderCaller {
+	return func() InputReader {
+		return bufio.NewReader(os.Stdin)
+	}	
+}
+
+// InputReaderCaller is a function that returns an InputReader.
+type InputReaderCaller func () InputReader
 
 // InputReader defines the interface for reading user input.
 type InputReader interface {
@@ -51,13 +59,14 @@ type InputReader interface {
 }
 
 // User prompts the user to enter the operation, input file path, output file path, and secret key.
-func User(r InputReader, readPSWD ReadPSWDFn) (UserInput, error) {
+func User(irc InputReaderCaller, readPSWD ReadPSWDFn) (UserInput, error) {
 	emptyInput := UserInput{}
 	trimSpace := func(s string) stringx.String {
 		return stringx.String(s).Trim(stringx.Space.String())
 	}
 	getInput := func() string {
-		s, _ := r.ReadString('\n')
+		reader := irc()
+		s, _ := reader.ReadString('\n')
 		return s
 	}
 
