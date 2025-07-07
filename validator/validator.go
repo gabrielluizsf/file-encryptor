@@ -20,8 +20,7 @@ func (v SecretValidator) Validate(data []byte) error {
 }
 
 type KeyValidator struct {
-	SecretValidator
-	Err error
+	Validator
 }
 
 func Secret(err error) Validator {
@@ -32,6 +31,6 @@ func Secret(err error) Validator {
 
 func Key(err error) Validator {
 	return KeyValidator{
-		Err: err,
+		Validator: Secret(err),
 	}
 }
