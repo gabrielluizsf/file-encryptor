@@ -1,68 +1,121 @@
 package input
 
 import (
-	"fmt"
+	"bufio"
+	"errors"
 	"os"
 	"testing"
+
+	"github.com/i9si-sistemas/assert"
+	"github.com/i9si-sistemas/stringx"
+	"golang.org/x/term"
 )
 
-type MockReadPswd struct {
-	Key string
+func TestStdReader(t *testing.T) {
+	assert.Equal(t, StdReader, bufio.NewReader(os.Stdin))
 }
 
-// Mock for the terminal password read function
-func (m MockReadPswd) ReadPassword(fd int) ([]byte, error) {
-	return []byte(m.Key), nil // Returning a fixed password for testing
+func TestReadPassword(t *testing.T) {
+	assert.Equal(t, ReadPassword, term.ReadPassword)
 }
+
+func TestOperations(t *testing.T) {
+	encryptOp, decryptOp := "encrypt", "decrypt"
+	assert.Equal(t, Encrypt, encryptOp)
+	assert.Equal(t, Encrypt.String(), encryptOp)
+	assert.Equal(t, Decrypt, decryptOp)
+	assert.Equal(t, Decrypt.String(), decryptOp)
+}
+
+// the max of ReadString method calls is 3
+var errInvalidCalledCount = errors.New("invalid called count")
 
 func TestUser(t *testing.T) {
-	originalStdin := os.Stdin
-	originalReadPswd := readPassword
-
-	defer func() {
-		os.Stdin = originalStdin
-		readPassword = originalReadPswd
-	}()
-	executeInput("secretkey")
-	userInput, err := User()
-	if err != ErrSecretTooShort {
-		t.Fatal(err)
+	tests := []struct {
+		operation      string
+		inputFilePath  string
+		outputFilePath string
+		secret         string
+		expectedErr    error
+	}{
+		{
+			operation:      "encrypt",
+			inputFilePath:  "input.txt",
+			outputFilePath: "output.bin",
+			secret:         "secret",
+			expectedErr:    ErrSecretTooShort,
+		},
+		{
+			operation:      "decrypt",
+			inputFilePath:  "encrypted.bin",
+			outputFilePath: "decrypted.txt",
+			secret:         "12345678912",
+			expectedErr:    nil,
+		},
+		{
+			operation:      "invalid",
+			inputFilePath:  "invalid.txt",
+			outputFilePath: "invalid.bin",
+			secret:         "12345678912",
+			expectedErr:    ErrInvalidOperation,
+		},
 	}
-
-	fmt.Println("Test user input:", userInput)
-
-	if userInput.Operation != "encrypt" {
-		t.Errorf("expected 'encrypt', got %s", userInput.Operation)
+	for _, testCase := range tests {
+		t.Run(testCase.operation, func(t *testing.T) {
+			var fd int
+			r := testStringReader(testCase.operation, testCase.inputFilePath, testCase.outputFilePath)
+			input, err := User(
+				r,
+				testReadPSWD(testCase.secret, &fd),
+			)
+			assert.Equal(t, err, testCase.expectedErr)
+			assert.Equal(t, r.byteSeparator, '\n')
+			assert.Equal(t, fd, os.Stdin.Fd())
+			if testCase.operation == "invalid"  {
+				assert.Zero(t, input.Operation)
+				return
+			}
+			assert.Equal(t, input.Operation, testCase.operation)
+		})
 	}
-	if userInput.Path != "file.txt" {
-		t.Errorf("expected 'file.txt', got %s", userInput.Path)
-	}
-	if userInput.OutputPath != "file.enc" {
-		t.Errorf("expected 'file.enc', got %s", userInput.OutputPath)
-	}
-	if userInput.Secret != "secretkey" {
-		t.Errorf("expected 'secretkey', got %s", userInput.Secret)
-	}
-	
-	executeInput("secretkey11")
-
-	userInput, err = User()
-	if err != nil {
-		t.Fatal(err)
-	}
-
 }
 
-func executeInput(key string) {
-	r, w, _ := os.Pipe()
+func testReadPSWD(pswd string, fdPtr *int) ReadPSWDFn {
+	return func(fd int) ([]byte, error) {
+		*fdPtr = fd
+		return []byte(pswd), nil
+	}
+}
 
-	go func() {
-		fmt.Fprintln(w, "encrypt")
-		fmt.Fprintln(w, "file.txt")
-		fmt.Fprintln(w, "file.enc")
-		w.Close()
-	}()
+func testStringReader(
+	op string,
+	ifp, ofp string,
+) *testTermStringReader {
+	return &testTermStringReader{
+		operation:      op,
+		inputFilePath:  ifp,
+		outputFilePath: ofp,
+	}
+}
 
-	os.Stdin = r
-	readPassword = MockReadPswd{key}.ReadPassword
+type testTermStringReader struct {
+	byteSeparator  byte
+	operation      string
+	inputFilePath  string
+	outputFilePath string
+	calledCount    int
+}
+
+func (r *testTermStringReader) ReadString(sep byte) (op string, err error) {
+	r.byteSeparator = sep
+	r.calledCount++
+	switch r.calledCount {
+	case 1:
+		return r.operation, nil
+	case 2:
+		return r.inputFilePath, nil
+	case 3:
+		return r.outputFilePath, nil
+	}
+	return stringx.Empty.String(), errInvalidCalledCount
 }
