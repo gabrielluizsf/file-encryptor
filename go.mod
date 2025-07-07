@@ -1,10 +1,13 @@
 module github.com/gabrielluizsf/file-encryptor
 
-go 1.23.3
+go 1.24.1
+
+toolchain go1.24.4
 
 require (
-	github.com/i9si-sistemas/assert v0.0.0-20241226143514-2239efdffece
-	golang.org/x/term v0.27.0
+	github.com/i9si-sistemas/assert v1.0.0
+	github.com/i9si-sistemas/stringx v1.5.3
+	golang.org/x/term v0.32.0
 )
 
-require golang.org/x/sys v0.28.0 // indirect
+require golang.org/x/sys v0.33.0 // indirect
