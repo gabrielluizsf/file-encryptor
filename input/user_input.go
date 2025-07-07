@@ -5,10 +5,10 @@ import (
 	"errors"
 	"fmt"
 	"os"
-	"strings"
 
+	"github.com/gabrielluizsf/file-encryptor/encryptor"
 	"github.com/gabrielluizsf/file-encryptor/validator"
-	"golang.org/x/term"
+	"github.com/i9si-sistemas/stringx"
 )
 
 // UserInput defines the structure for user input.
@@ -30,40 +30,61 @@ const (
 	Decrypt cryptoOperation = "decrypt"
 )
 
-// ErrInvalidOperation is returned when the user enters an invalid operation.
+// ReadPSWDFn defines the function type for reading a password.
+type ReadPSWDFn func(fd int) ([]byte, error)
+
 var (
+	// ErrInvalidOperation is returned when the user enters an invalid operation.
 	ErrInvalidOperation = errors.New("invalid operation. Please choose 'encrypt' or 'decrypt'")
-	readPassword        = term.ReadPassword
+
+	// StdReader is the standard input reader.
+	StdReader = bufio.NewReader(os.Stdin)
+
+	// ReadPassword is the function for reading a password.
+	ReadPassword ReadPSWDFn = PasswordReader()
 )
 
+// InputReader defines the interface for reading user input.
+type InputReader interface {
+	// ReadString reads a string from the input.
+	ReadString(sep byte) (string, error)
+}
+
 // User prompts the user to enter the operation, input file path, output file path, and secret key.
-func User() (UserInput, error) {
-	reader := bufio.NewReader(os.Stdin)
+func User(r InputReader, readPSWD ReadPSWDFn) (UserInput, error) {
+	emptyInput := UserInput{}
+	trimSpace := func(s string) stringx.String {
+		return stringx.String(s).Trim(stringx.Space.String())
+	}
+	getInput := func() string {
+		s, _ := r.ReadString('\n')
+		return s
+	}
 
 	fmt.Print("Enter the operation (encrypt/decrypt): ")
-	operation, _ := reader.ReadString('\n')
-	operation = strings.TrimSpace(operation)
+	operation := getInput()
+	operation = trimSpace(operation).String()
 
 	fmt.Print("Enter the input file path: ")
-	inputPath, _ := reader.ReadString('\n')
-	inputPath = strings.TrimSpace(inputPath)
+	inputPath := getInput()
+	inputPath = trimSpace(inputPath).String()
 
 	fmt.Print("Enter the output file path: ")
-	outputPath, _ := reader.ReadString('\n')
-	outputPath = strings.TrimSpace(outputPath)
+	outputPath := getInput()
+	outputPath = trimSpace(outputPath).String()
 
 	// Secret key input with hidden characters
 	fmt.Print("Enter the secret key (at least 11 characters): ")
-	secret, err := readPassword(int(os.Stdin.Fd()))
+	secret, err := readPSWD(int(os.Stdin.Fd()))
 	if err != nil {
-		return UserInput{}, err
+		return emptyInput, err
 	}
 	secretStr := string(secret)
-	secretStr = strings.TrimSpace(secretStr)
+	secretStr = trimSpace(secretStr).String()
 
 	selectedOperation, err := validateOperation(operation)
 	if err != nil {
-		return UserInput{}, err
+		return emptyInput, err
 	}
 
 	input := UserInput{
@@ -72,12 +93,11 @@ func User() (UserInput, error) {
 		OutputPath: outputPath,
 		Secret:     secretStr,
 	}
-	err = validateSecret(input.Secret)
-	return input, err
+	return input, validateSecret(input.Secret)
 }
 
 // ErrSecretTooShort is returned when the secret key is less than 11 characters long.
-var ErrSecretTooShort = errors.New("the secret key must be at least 11 characters long")
+var ErrSecretTooShort = encryptor.ErrKeyTooShort
 
 // validateKey ensures the key is at least 11 characters long.
 func validateSecret(key string) error {
@@ -91,6 +111,6 @@ func validateOperation(operation string) (cryptoOperation, error) {
 	case Decrypt.String():
 		return Decrypt, nil
 	default:
-		return "", ErrInvalidOperation
+		return cryptoOperation(stringx.Empty), ErrInvalidOperation
 	}
 }
