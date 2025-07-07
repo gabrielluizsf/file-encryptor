@@ -111,13 +111,17 @@ type testTermStringReader struct {
 func (r *testTermStringReader) ReadString(sep byte) (op string, err error) {
 	r.byteSeparator = sep
 	r.calledCount++
+	concat := func (input string, sep stringx.String) string {
+		return stringx.String(input).Concat(sep).String()
+	}
+	separator := stringx.String(r.byteSeparator)
 	switch r.calledCount {
 	case 1:
-		return r.operation, nil
+		return concat(r.operation, separator), nil
 	case 2:
-		return r.inputFilePath, nil
+		return concat(r.inputFilePath, separator), nil
 	case 3:
-		return r.outputFilePath, nil
+		return concat(r.outputFilePath, separator), nil
 	}
 	return stringx.Empty.String(), errInvalidCalledCount
 }
