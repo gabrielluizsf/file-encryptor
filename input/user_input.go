@@ -62,7 +62,7 @@ type InputReader interface {
 func User(irc InputReaderCaller, readPSWD ReadPSWDFn) (UserInput, error) {
 	emptyInput := UserInput{}
 	trimSpace := func(s string) stringx.String {
-		return stringx.String(s).Trim(stringx.Space.String())
+		return stringx.String(s).Trim(stringx.Space.String()).Trim(stringx.NewLine.String())
 	}
 	getInput := func() string {
 		reader := irc()
