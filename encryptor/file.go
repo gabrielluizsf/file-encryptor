@@ -55,7 +55,7 @@ func (fc *FileCrypto) Encrypt(inputPath, outputPath string) error {
 		return err
 	}
 
-	stream := cipher.NewCFBEncrypter(block, iv)
+	stream := cipher.NewCTR(block, iv)
 	writer := &cipher.StreamWriter{S: stream, W: outputFile}
 
 	// Encrypt the file content
