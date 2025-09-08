@@ -86,7 +86,7 @@ func (fc *FileCrypto) Decrypt(inputPath, outputPath string) error {
 	}
 
 	// Create the decrypter with the IV
-	stream := cipher.NewCFBDecrypter(block, iv)
+	stream := cipher.NewCTR(block, iv)
 	reader := &cipher.StreamReader{S: stream, R: inputFile} // Read the rest of the encrypted file
 
 	outputFile, err := os.Create(outputPath)
